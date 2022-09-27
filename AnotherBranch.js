@@ -28,13 +28,16 @@ const adidasProduct = {
     //   ios_deeplink_path: 'product/FZ3777',
     // },
   },
-};
+}
 
 class AnotherBranch extends Component {
   product = null;
+  lastParams = null;
+  installParams = null;
 
   state = {
     results: [],
+    data: null,
   };
 
   componentWillUnmount() {
@@ -43,6 +46,63 @@ class AnotherBranch extends Component {
     }
     this.product.release();
   }
+
+  async componentDidMount() {
+    this.lastParams = await branch.getLatestReferringParams(); // params from last open
+    this.installParams = await branch.getFirstReferringParams(); // params from original install
+  }
+
+  /**
+   * Check branch params
+   */
+  checkParamsFromBranch = async () => {
+    // try {
+    //   // let res = await branch.subscribe();
+    //   let last = await branch.getLatestReferringParams();
+    //   // let first = await branch.getFirstReferringParams();
+    //   let init = await branch.initSessionTtl()
+    //   this.product = last.key;
+    //   this.addResult('success', 'createBranchUniversalObject', last);
+    // } catch (error) {
+    //   console.log('createBranchUniversalObject err', error.toString());
+    //   this.addResult('error', 'createBranchUniversalObject', error.toString());
+    // }
+    branch.subscribe(({error, params, uri}) => {
+      if (error) {
+        console.error('Error from Branch: ' + error);
+        return;
+      }
+
+      console.log('Params: ', params);
+      console.log('uri: ', uri);
+
+      if (params['+non_branch_link']) {
+        const nonBranchUrl = params['+non_branch_link'];
+        return;
+      }
+
+      if (!params['+clicked_branch_link']) {
+        return;
+      }
+
+      // A Branch link was opened.
+      // Route link based on data in params, e.g.
+      const title = params.$og_title;
+      const url = params.$canonical_identifier;
+      const image = params.$og_image_url;
+      const datasss = {title, url, image};
+      this.addData(datasss);
+      // console.log('createBranchUniversalObject', title);
+      // this.addResult('success', 'createBranchUniversalObject', title);
+    });
+
+    let lastParams = await branch.getLatestReferringParams();
+    let installParams = await branch.getFirstReferringParams(true);
+
+    console.log('LAST PARAMS', lastParams);
+    this.addResult('success', 'createBranchUniversalObject', lastParams);
+    console.log('INSTALL', installParams);
+  };
 
   /**
    * Adidas Shoes object
@@ -222,7 +282,7 @@ class AnotherBranch extends Component {
         description: 'Test purchase event',
         searchQuery: 'test keyword',
         customData: {
-          depplink_path:'product/FZ3777',
+          depplink_path: 'product/FZ3777',
           og_app_id: '129087217170262',
           $og_title: 'Adidas Android App',
           $canonical_identifier: 'adidas/5324',
@@ -476,6 +536,12 @@ class AnotherBranch extends Component {
     });
   }
 
+  addData(dataFromBranch) {
+    this.setState({
+      data: this.state.dataFromBranch,
+    });
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -507,7 +573,7 @@ class AnotherBranch extends Component {
           {/* <Button onPress={this.createBranchUniversalObject}>Create Branch Default Object</Button> */}
           <Button onPress={this.dataCommerceShoesAdidas}>Create Branch Adidas Object</Button>
           <Button onPress={this.generateShortUrl}>Deep Link - Generate Short URL</Button>
-          
+          <Button onPress={this.checkParamsFromBranch}>Check Object from Branch</Button>
           <Button onPress={this.logCustomEvent}>BranchEvent.logEvent (Custom)</Button>
           <Button onPress={this.logStandardEventLifecycleRegister}>BranchEvent.logEvent (Lifecycle Complete Registration)</Button>
           <Button onPress={this.logStandardEventCommercePurchase}>BranchEvent.logEvent (Commerce Purchase)</Button>
@@ -623,7 +689,7 @@ class AnotherComponent extends Component {
   }
 }
 
-export default AnotherBranch
+export default AnotherBranch;
 
 const styles = StyleSheet.create({
   container: {
