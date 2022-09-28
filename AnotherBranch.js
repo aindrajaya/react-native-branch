@@ -9,26 +9,45 @@ const defaultProduct = {
   title: 'Try event',
 };
 
-const adidasProduct = {
+let adidasProduct = {
   canonicalUrl: 'https://www.adidas.com/us/nmd_r1-shoes/FZ3777.html',
   title: 'NMD R1',
   contentMetadata: {
     quantity: 1,
-    price: 23.20,
+    price: 23.12,
     sku: '1994320302',
     productName: 'Shoes Adidas',
     productBrand: 'Adidas',
     // customMetadata: {
     //   og_title: 'Adidas Shoes',
     //   og_description: 'Adidsa shoes for runner',
-    //   quantity: 1,
     //   android_deeplink_path: 'product/FZ3777',
     //   og_app_id: '129087217170262',
     //   deeplink_path: 'product/FZ3777',
     //   ios_deeplink_path: 'product/FZ3777',
     // },
   },
-}
+};
+
+let params = {
+  transactionID: '12344554',
+  currency: 'USD',
+  revenue: 1.5,
+  shipping: 10.2,
+  tax: 12.3,
+  coupon: 'Coupon_Y',
+  affiliation: 'test_affiliation',
+  description: 'Test purchase event',
+  searchQuery: 'test keyword',
+  // customData: this.state.data,
+  customData: {
+    depplink_path: 'product/FZ3777',
+    og_app_id: '129087217170262',
+    $og_title: 'Adidas Android App',
+    $canonical_identifier: 'adidas/5324',
+  },
+  alias: 'WishList',
+};
 
 class AnotherBranch extends Component {
   product = null;
@@ -41,15 +60,30 @@ class AnotherBranch extends Component {
   };
 
   componentWillUnmount() {
+    // this.checkDataFromBranchSDK();
     if (!this.product) {
       return;
     }
     this.product.release();
+    // this.state.data.release();
   }
 
-  async componentDidMount() {
+  componentDidMount() {
     this.checkDataFromBranchSDK();
+    // this.getData();
   }
+
+  /**
+   * Dummy data
+   */
+  getData = () => {
+    this.setState({
+      data: {
+        a: 'string',
+        b: 'string2',
+      },
+    });
+  };
 
   /**
    * Check branch params
@@ -66,13 +100,13 @@ class AnotherBranch extends Component {
     //   console.log('createBranchUniversalObject err', error.toString());
     //   this.addResult('error', 'createBranchUniversalObject', error.toString());
     // }
-    branch.subscribe(({error, params, uri}) => {
+    await branch.subscribe(({error, params, uri}) => {
       if (error) {
         console.error('Error from Branch: ' + error);
         return;
       }
 
-      console.log('Params: ', params);
+      console.log('Paramssss: ', params);
       console.log('uri: ', uri);
 
       if (params['+non_branch_link']) {
@@ -86,9 +120,17 @@ class AnotherBranch extends Component {
 
       // A Branch link was opened.
       // Route link based on data in params, e.g.
-      const title = params.$og_title;
-      const url = params.$canonical_identifier;
-      const image = params.$og_image_url;
+      // const title = params.$og_title;
+      // const url = params.$canonical_identifier;
+      // const image = params.$og_image_url;
+      this.setState({
+        data: {
+          deeplink: params.$deeplink_path,
+          appId: params.$og_app_id,
+          androidDeeplink: params.$android_deeplink_path,
+          canonical_url: params.$canonical_url,
+        },
+      });
       // const datasss = {title, url, image};
       // this.addData(datasss);
       // console.log('createBranchUniversalObject', title);
@@ -117,10 +159,10 @@ class AnotherBranch extends Component {
       }
       this.product = res;
       console.log('createBranchUniversalObject', res);
-      this.addResult('success', 'createBranchUniversalObject', res);
+      this.addResult('success', 'createBranchAdidasObject', res);
     } catch (error) {
       console.log('createBranchUniversalObject err', error.toString());
-      this.addResult('error', 'createBranchUniversalObject', error.toString());
+      this.addResult('error', 'createBranchAdidasObject', error.toString());
     }
   };
 
@@ -149,12 +191,13 @@ class AnotherBranch extends Component {
     let link = {
       feature: 'sharing',
       channel: 'adidas',
-      campaign: 'content addidas',
+      campaign: 'content addidas shoes',
     };
 
     let controlParams = {
-      $desktop_url: 'https://adidas.com/',
+      $desktop_url: 'https://nike.com/',
       custom: 'data',
+      url: 'https://aloysius.app.link/EF8tn2kwmdb',
     };
 
     if (!this.product) {
@@ -170,34 +213,6 @@ class AnotherBranch extends Component {
     }
   };
 
-  listOnSpotlight = async () => {
-    if (!this.product) {
-      await this.createBranchUniversalObject();
-    }
-    try {
-      let result = await this.product.listOnSpotlight();
-      console.log('listOnSpotlight', result);
-      this.addResult('success', 'listOnSpotlight', result);
-    } catch (err) {
-      console.log('listOnSpotlight err', err.toString());
-      this.addResult('error', 'listOnSpotlight', err.toString());
-    }
-  };
-
-  showShareSheet = async () => {
-    if (!this.product) {
-      await this.createBranchUniversalObject();
-    }
-    try {
-      let result = await this.product.showShareSheet();
-      console.log('showShareSheet', result);
-      this.addResult('success', 'showShareSheet', result);
-    } catch (err) {
-      console.log('showShareSheet err', err.toString());
-      this.addResult('error', 'showShareSheet', err.toString());
-    }
-  };
-
   sendCommerceEvent = async () => {
     try {
       let result = await branch.sendCommerceEvent(20.0, {key: 'value'});
@@ -210,122 +225,102 @@ class AnotherBranch extends Component {
     }
   };
 
-  disableTracking = async () => {
-    try {
-      let disabled = await branch.isTrackingDisabled();
-      branch.disableTracking(!disabled);
-      disabled = await branch.isTrackingDisabled();
-      let status = disabled ? 'Tracking Disabled' : 'Tracking Enabled';
-      console.log('disableTracking', status);
-      this.addResult('success', 'disableTracking', status);
-    } catch (err) {
-      console.log('disableTracking err', err);
-      this.addResult('error', 'disableTracking', err.toString());
-    }
-  };
-
-  isTrackingDisabled = async () => {
-    try {
-      let disabled = await branch.isTrackingDisabled();
-      let status = disabled ? 'Tracking is Disabled' : 'Tracking is Enabled';
-      console.log('isTrackingDisabled', status);
-      this.addResult('success', 'isTrackingDisabled', status);
-    } catch (err) {
-      console.log('isTrackingDisabled err', err);
-      this.addResult('error', 'isTrackingDisabled', err.toString());
-    }
-  };
-
   /**
    * Event Standard Commerce
    */
   logStandardEventCommerceAddToWishlist = async () => {
     try {
-      let branchEvent = new BranchEvent(BranchEvent.AddToWishlist, this.product, {
-        transactionID: '12344554',
-        currency: 'USD',
-        revenue: 1.5,
-        shipping: 10.2,
-        tax: 12.3,
-        coupon: 'Coupon_Y',
-        affiliation: 'test_affiliation',
-        description: 'Test purchase event',
-        searchQuery: 'test keyword',
-        customData: {
-          depplink_path:'product/FZ3777',
-          og_app_id: '129087217170262',
-          $og_title: 'Adidas Android App',
-          $canonical_identifier: 'adidas/5324',
-        },
-        alias: 'WishList',
-      });
+      let result = await branch.createBranchUniversalObject(
+        'item/1',
+        // adidasProduct,
+        defaultProduct,
+      );
+      // if (this.product) {
+      //   this.product.release();
+      // }
+      this.product = result;
+      let branchEvent = new BranchEvent(
+        BranchEvent.AddToWishlist,
+        [this.product],
+        params,
+      );
       branchEvent.logEvent();
-
-      this.addResult('success', 'sendStandardEvent', branchEvent);
+      this.addResult(
+        'success',
+        'logStandardEventCommerceAddToWishlist',
+        branchEvent,
+      );
     } catch (err) {
       console.log('sendStandardEvent err', err);
-      this.addResult('error', 'sendStandardEvent', err.toString());
+      this.addResult(
+        'error',
+        'logStandardEventCommerceAddToWishlist',
+        err.toString(),
+      );
     }
   };
 
   logStandardEventCommerceAddToCard = async () => {
+    let res = await branch.createBranchUniversalObject(
+      'adidasItem/12345',
+      // adidasProduct,
+      defaultProduct,
+    );
+    if (this.product) {
+      this.product.release();
+    }
+    this.product = res;
     try {
-      let branchEvent = new BranchEvent(BranchEvent.AddToCart, this.product, {
-        transactionID: '12344557',
-        currency: 'USD',
-        revenue: 1.5,
-        shipping: 10.2,
-        tax: 12.3,
-        coupon: 'Coupon_X',
-        affiliation: 'test_affiliation',
-        description: 'Test purchase event',
-        searchQuery: 'test keyword',
-        customData: {
-          depplink_path: 'product/FZ3777',
-          og_app_id: '129087217170262',
-          $og_title: 'Adidas Android App',
-          $canonical_identifier: 'adidas/5324',
-        },
-        alias: 'ItemViewed',
-      });
+      let branchEvent = new BranchEvent(
+        BranchEvent.AddToCart,
+        [this.product],
+        params,
+      );
       branchEvent.logEvent();
-
-      this.addResult('success', 'sendStandardEvent', branchEvent);
+      this.addResult(
+        'success',
+        'logStandardEventCommerceAddToCard',
+        branchEvent,
+      );
     } catch (err) {
       console.log('sendStandardEvent err', err);
-      this.addResult('error', 'sendStandardEvent', err.toString());
+      this.addResult(
+        'error',
+        'logStandardEventCommerceAddToCard',
+        err.toString(),
+      );
     }
   };
 
   logStandardEventCommercePurchase = async () => {
-    if (!this.product) {
-      await this.createBranchUniversalObject();
+    let res = await branch.createBranchUniversalObject(
+      'adidasItem/12345',
+      // adidasProduct,
+      defaultProduct,
+    );
+    if (this.product) {
+      this.product.release();
     }
+    this.product = res;
     try {
-      let branchEvent = new BranchEvent(BranchEvent.Purchase, this.product, {
-        transactionID: '12344555',
-        currency: 'USD',
-        revenue: 1.5,
-        shipping: 10.2,
-        tax: 12.3,
-        coupon: 'test_coupon',
-        affiliation: 'test_affiliation',
-        description: 'Test purchase event',
-        searchQuery: 'test keyword',
-        customData: {
-          depplink_path:'product/FZ3777',
-          og_app_id: '129087217170262',
-          $og_title: 'Adidas Android App',
-          $canonical_identifier: 'adidas/5324',
-        },
-        alias: 'ItemViewed',
-      });
+      let branchEvent = new BranchEvent(
+        BranchEvent.Purchase,
+        [this.product],
+        params,
+      );
       branchEvent.logEvent();
-
-      this.addResult('success', 'sendStandardEvent', branchEvent);
+      this.addResult(
+        'success',
+        'logStandardEventCommercePurchase',
+        branchEvent,
+      );
     } catch (err) {
       console.log('sendStandardEvent err', err);
-      this.addResult('error', 'sendStandardEvent', err.toString());
+      this.addResult(
+        'error',
+        'logStandardEventCommercePurchase',
+        err.toString(),
+      );
     }
   };
 
@@ -333,11 +328,17 @@ class AnotherBranch extends Component {
    * Event Standard Content
    */
   logStandardEventContentSearch = async () => {
-    if (!this.product) {
-      await this.createBranchUniversalObject();
+    let res = await branch.createBranchUniversalObject(
+      'adidasItem/12345',
+      // adidasProduct,
+      defaultProduct,
+    );
+    if (this.product) {
+      this.product.release();
     }
+    this.product = res;
     try {
-      let branchEvent = new BranchEvent(BranchEvent.Search, this.product, {
+      let branchEvent = new BranchEvent(BranchEvent.Search, [this.product], {
         alias: 'RMD R1 Adidas',
         description: 'Product Search',
         searchQuery: 'black men footbal',
@@ -350,10 +351,10 @@ class AnotherBranch extends Component {
       });
       branchEvent.logEvent();
 
-      this.addResult('success', 'sendStandardEventContent', branchEvent);
+      this.addResult('success', 'logStandardEventContentSearch', branchEvent);
     } catch (err) {
       console.log('sendStandardEvent err', err);
-      this.addResult('error', 'sendStandardEventContent', err.toString());
+      this.addResult('error', 'logStandardEventContentSearch', err.toString());
     }
   };
 
@@ -365,26 +366,151 @@ class AnotherBranch extends Component {
       await this.createBranchUniversalObject();
     }
     try {
-      let branchEvent = new BranchEvent(BranchEvent.CompleteRegistration, this.product, {
-        os: 'Android',
-        description: 'Preferred',
-        developerIdentity: 'user1234',
-        // customData: {
-        //   depplink_path: 'product/FZ3777',
-        //   og_app_id: '129087217170262',
-        //   $og_title: 'Adidas Android App',
-        //   $canonical_identifier: 'adidas/5324',
-        // },
-      });
+      let branchEvent = new BranchEvent(
+        BranchEvent.CompleteRegistration,
+        [this.product],
+        {
+          os: 'Android',
+          description: 'Preferred',
+          developerIdentity: 'user1234',
+          // customData: {
+          //   depplink_path: 'product/FZ3777',
+          //   og_app_id: '129087217170262',
+          //   $og_title: 'Adidas Android App',
+          //   $canonical_identifier: 'adidas/5324',
+          // },
+        },
+      );
       branchEvent.logEvent();
-
-      this.addResult('success', 'sendStandardEventContent', branchEvent);
+      this.addResult(
+        'success',
+        'logStandardEventLifecycleRegister',
+        branchEvent,
+      );
     } catch (err) {
       console.log('sendStandardEvent err', err);
-      this.addResult('error', 'sendStandardEventContent', err.toString());
+      this.addResult(
+        'error',
+        'logStandardEventLifecycleRegister',
+        err.toString(),
+      );
     }
   };
 
+  logCustomEvent = async () => {
+    if (!this.product) {
+      await this.createBranchUniversalObject();
+    }
+    try {
+      let branchEvent = new BranchEvent(
+        'Adidas Click add to cart',
+        [this.product],
+        {
+          name: 'ADD_TO_CART',
+          currency: 'USD',
+          revenue: 1.5,
+          shipping: 10.2,
+          tax: 12.3,
+          coupon: 'test_coupon',
+          affiliation: 'test_affiliation',
+          description: 'Test purchase event',
+          searchQuery: 'test keyword',
+          customData: {
+            depplink_path: 'product/FZ3777',
+            og_app_id: '129087217170262',
+            $og_title: 'Adidas Android App',
+            $canonical_identifier: 'adidas/5324',
+          },
+        },
+      );
+      branchEvent.logEvent();
+
+      let anotherEvent = new BranchEvent(
+        'Adidas Event add to cart',
+        this.product,
+        {
+          branch_key: 'key_live_akTFshXnlW0oojkevse2OlonFygs6PVq',
+          identity: '3602026348270235652341',
+          event: 'add_to_cart',
+          metadata: {
+            hello: 'world',
+          },
+          commerce_data: {
+            revenue: 50.0,
+            currency: 'USD',
+            transaction_id: 'foo-transaction-id',
+            shipping: 0.0,
+            tax: 5.0,
+            affiliation: 'foo-affiliation',
+            products: [
+              {
+                sku: 'foo-sku-1',
+                name: 'Shoes 1',
+                price: 45.0,
+                quantity: 1,
+                brand: 'Adidas',
+                category: 'Shoes',
+                variant: 'foo-variant-1',
+              },
+            ],
+          },
+        },
+      );
+      anotherEvent.logEvent();
+      this.addResult('success', 'sendStandardEvent', branchEvent);
+      // this.addResult('Success', 'process standard event', anotherEvent);
+    } catch (err) {
+      console.log('sendStandardEvent err', err);
+      this.addResult('error', 'sendStandardEvent', err.toString());
+    }
+  };
+
+  addResult(type, slug, payload) {
+    let result = {type, slug, payload};
+    this.setState({
+      results: [result, ...this.state.results].slice(0, 10),
+    });
+  }
+
+  /**
+   * Not used
+   */
+  addData(dataFromBranch) {
+    this.setState({
+      data: this.state.dataFromBranch,
+    });
+  }
+
+  lastAttributedTouchData = async () => {
+    const attributionWindow = 365;
+    try {
+      let latd = await branch.lastAttributedTouchData(attributionWindow);
+      console.log('lastAttributedTouchData', latd);
+      this.addResult('success', 'lastAttributedTouchData', latd);
+    } catch (err) {
+      console.log('lastAttributedTouchData', err);
+      this.addResult('error', 'lastAttributedTouchData', err.toString());
+    }
+  };
+
+  openPage = async ({link}) => {
+    try {
+      await Linking.openURL(link.url);
+      this.addResult('success', 'openURL', link);
+    } catch (err) {
+      this.addResult('error', 'openURL', err.toString());
+    }
+  };
+
+  openURL = async () => {
+    const url = 'https://aloysius.app.link/EF8tn2kwmdb';
+    try {
+      await branch.openURL(url);
+      this.addResult('success', 'openURL', url);
+    } catch (err) {
+      this.addResult('error', 'openURL', err.toString());
+    }
+  };
 
   createDeepLink = async () => {
     let link = {
@@ -436,110 +562,59 @@ class AnotherBranch extends Component {
     },
   };
 
-  logCustomEvent = async () => {
+  disableTracking = async () => {
+    try {
+      let disabled = await branch.isTrackingDisabled();
+      branch.disableTracking(!disabled);
+      disabled = await branch.isTrackingDisabled();
+      let status = disabled ? 'Tracking Disabled' : 'Tracking Enabled';
+      console.log('disableTracking', status);
+      this.addResult('success', 'disableTracking', status);
+    } catch (err) {
+      console.log('disableTracking err', err);
+      this.addResult('error', 'disableTracking', err.toString());
+    }
+  };
+
+  isTrackingDisabled = async () => {
+    try {
+      let disabled = await branch.isTrackingDisabled();
+      let status = disabled ? 'Tracking is Disabled' : 'Tracking is Enabled';
+      console.log('isTrackingDisabled', status);
+      this.addResult('success', 'isTrackingDisabled', status);
+    } catch (err) {
+      console.log('isTrackingDisabled err', err);
+      this.addResult('error', 'isTrackingDisabled', err.toString());
+    }
+  };
+
+  listOnSpotlight = async () => {
     if (!this.product) {
-      await this.createBranchUniversalObject()
+      await this.createBranchUniversalObject();
     }
     try {
-      let branchEvent = new BranchEvent('Adidas Click add to cart', this.product, {
-        name: 'ADD_TO_CART',
-        currency: 'USD',
-        revenue: 1.5,
-        shipping: 10.2,
-        tax: 12.3,
-        coupon: 'test_coupon',
-        affiliation: 'test_affiliation',
-        description: 'Test purchase event',
-        searchQuery: 'test keyword',
-        customData: {
-          depplink_path:'product/FZ3777',
-          og_app_id: '129087217170262',
-          $og_title: 'Adidas Android App',
-          $canonical_identifier: 'adidas/5324',
-        },
-      });
-      branchEvent.logEvent();
-
-      let anotherEvent = new BranchEvent('Adidas Event add to cart', this.product, {
-        branch_key: 'key_live_akTFshXnlW0oojkevse2OlonFygs6PVq',
-        identity: '3602026348270235652341',
-        event: 'add_to_cart',
-        metadata: {
-          hello: 'world',
-        },
-        commerce_data: {
-          revenue: 50.0,
-          currency: 'USD',
-          transaction_id: 'foo-transaction-id',
-          shipping: 0.0,
-          tax: 5.0,
-          affiliation: 'foo-affiliation',
-          products: [
-            {
-              sku: 'foo-sku-1',
-              name: 'Shoes 1',
-              price: 45.0,
-              quantity: 1,
-              brand: 'Adidas',
-              category: 'Shoes',
-              variant: 'foo-variant-1',
-            },
-          ],
-        },
-      });
-      anotherEvent.logEvent();
-
-      this.addResult('success', 'sendStandardEvent', branchEvent);
-      // this.addResult('Success', 'process standard event', anotherEvent);
+      let result = await this.product.listOnSpotlight();
+      console.log('listOnSpotlight', result);
+      this.addResult('success', 'listOnSpotlight', result);
     } catch (err) {
-      console.log('sendStandardEvent err', err);
-      this.addResult('error', 'sendStandardEvent', err.toString());
+      console.log('listOnSpotlight err', err.toString());
+      this.addResult('error', 'listOnSpotlight', err.toString());
     }
   };
 
-  openURL = async () => {
-    const url = 'https://aloysius.app.link/EF8tn2kwmdb';
+  showShareSheet = async () => {
+    if (!this.product) {
+      await this.createBranchUniversalObject();
+    }
     try {
-      await branch.openURL(url);
-      this.addResult('success', 'openURL', url);
+      let result = await this.product.showShareSheet();
+      console.log('showShareSheet', result);
+      this.addResult('success', 'showShareSheet', result);
     } catch (err) {
-      this.addResult('error', 'openURL', err.toString());
+      console.log('showShareSheet err', err.toString());
+      this.addResult('error', 'showShareSheet', err.toString());
     }
   };
-
-  openPage = async ({link}) => {
-    try {
-      await Linking.openURL(link.url);
-      this.addResult('success', 'openURL', link);
-    } catch (err) {
-      this.addResult('error', 'openURL', err.toString());
-    }
-  };
-
-  lastAttributedTouchData = async () => {
-    const attributionWindow = 365;
-    try {
-      let latd = await branch.lastAttributedTouchData(attributionWindow);
-      console.log('lastAttributedTouchData', latd);
-      this.addResult('success', 'lastAttributedTouchData', latd);
-    } catch (err) {
-      console.log('lastAttributedTouchData', err);
-      this.addResult('error', 'lastAttributedTouchData', err.toString());
-    }
-  };
-
-  addResult(type, slug, payload) {
-    let result = {type, slug, payload};
-    this.setState({
-      results: [result, ...this.state.results].slice(0, 10),
-    });
-  }
-
-  addData(dataFromBranch) {
-    this.setState({
-      data: this.state.dataFromBranch,
-    });
-  }
 
   render() {
     return (
@@ -567,24 +642,24 @@ class AnotherBranch extends Component {
         </View>
         <Text style={styles.header}>METHODS</Text>
         <ScrollView style={styles.buttonsContainer}>
-          <Button onPress={this.disableTracking}>disableTracking (switch on/off)</Button>
-          <Button onPress={this.isTrackingDisabled}>isTrackingDisabled</Button>
-          {/* <Button onPress={this.createBranchUniversalObject}>Create Branch Default Object</Button> */}
           <Button onPress={this.dataCommerceShoesAdidas}>Create Branch Adidas Object</Button>
           <Button onPress={this.generateShortUrl}>Deep Link - Generate Short URL</Button>
-          <Button onPress={this.checkDataFromBranchSDK}>Check Object from Branch</Button>
-          <Button onPress={this.logCustomEvent}>BranchEvent.logEvent (Custom)</Button>
-          <Button onPress={this.logStandardEventLifecycleRegister}>BranchEvent.logEvent (Lifecycle Complete Registration)</Button>
           <Button onPress={this.logStandardEventCommercePurchase}>BranchEvent.logEvent (Commerce Purchase)</Button>
           <Button onPress={this.logStandardEventCommerceAddToCard}>BranchEvent.logEvent (Commerce AddToCart)</Button>
           <Button onPress={this.logStandardEventCommerceAddToWishlist}>BranchEvent.logEvent (Commerce AddToWishlist)</Button>
           <Button onPress={this.logStandardEventContentSearch}>BranchEvent.logEvent (Content Search)</Button>
-          {/* <Button onPress={this.openURL}>openURL</Button>
-          <Button onPress={this.listOnSpotlight}>listOnSpotlight</Button>
-          <Button onPress={this.showShareSheet}>showShareSheet</Button> */}
+          <Button onPress={this.logCustomEvent}>BranchEvent.logEvent (Custom)</Button>
+          <Button onPress={this.logStandardEventLifecycleRegister}>BranchEvent.logEvent (Lifecycle Complete Registration)</Button>
+          {/* <Button onPress={this.disableTracking}>disableTracking (switch on/off)</Button> */}
+          {/* <Button onPress={this.isTrackingDisabled}>isTrackingDisabled</Button> */}
+          <Button onPress={this.createBranchUniversalObject}>Create Branch Default Object</Button>
+          {/* <Button onPress={this.checkDataFromBranchSDK}>Check Object from Branch</Button> */}
+          {/* <Button onPress={this.openURL}>openURL</Button> */}
+          {/* <Button onPress={this.listOnSpotlight}>listOnSpotlight</Button> */}
+          {/* <Button onPress={this.showShareSheet}>showShareSheet</Button> */}
         </ScrollView>
       </View>
-    )
+    );
   }
 }
 
